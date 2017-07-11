@@ -8,7 +8,7 @@ import java.util.Scanner;
  * @author Vinícius Camargo
  *
  * @date 10/07/2017
- */
+ */ 
 class Main {
     private static class Vertice {
 	int x;
