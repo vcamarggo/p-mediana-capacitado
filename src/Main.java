@@ -14,8 +14,8 @@ import java.util.Scanner;
  */
 class Main {
     private static class Vertice {
-	private int x;
-	private int y;
+	protected int x;
+	protected int y;
 	private short capacidade;
 	private short demanda;
 
@@ -34,17 +34,53 @@ class Main {
 	    this.capacidade = capacidade;
 	    this.demanda = demanda;
 	}
+
+	public short getCapacidade() {
+	    return capacidade;
+	}
+
+	public short getDemanda() {
+	    return demanda;
+	}
+
+	@Override
+	public int hashCode() {
+	    final int prime = 31;
+	    int result = 1;
+	    result = prime * result + x;
+	    result = prime * result + y;
+	    return result;
+	}
+
+	public Mediana encontraMedianaMaisProximaComCapacidade(List<Mediana> medianas) {
+	    int idxMin = -1;
+	    double currentMin = Double.MAX_VALUE;
+	    double currentVal;
+	    for (int iter = 0; iter < medianas.size(); iter++) {
+		currentVal = medianas.get(iter).findDistance(this);
+		if (currentVal < currentMin && medianas.get(iter).temCapacidade(demanda)) {
+		    currentMin = currentVal;
+		    idxMin = iter;
+		}
+	    }
+	    if (idxMin == -1) {
+		return null;
+	    }
+	    return medianas.get(idxMin);
+	}
+
     }
 
     private static class Mediana extends Vertice {
-	private List<Vertice> vertices;
+	private int somaDasDistancias;
+	private short capacidadeUsada;
 
 	public Mediana(int x, int y, short capacidade, short demanda) {
 	    super(x, y, capacidade, demanda);
 	}
 
-	public List<Vertice> getVertices() {
-	    return vertices;
+	public Mediana(Vertice v) {
+	    super(v.getX(), v.getY(), v.getCapacidade(), v.getDemanda());
 	}
 
 	public double findDistance(Vertice c2) {
@@ -54,6 +90,43 @@ class Main {
 	    double distance = Math.sqrt(dist);
 	    return distance;
 	}
+
+	public int getSomaDasDistancias() {
+	    return somaDasDistancias;
+	}
+
+	public void acrescentaDistancia(double distancia) {
+	    somaDasDistancias += distancia;
+	}
+
+	public void diminuiCapacidade(short demanda) {
+	    capacidadeUsada += demanda;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+	    if (this == obj)
+		return true;
+	    if (obj == null)
+		return false;
+	    Vertice other = (Vertice) obj;
+	    if (x != other.x)
+		return false;
+	    if (y != other.y)
+		return false;
+	    return true;
+	}
+
+	public boolean temCapacidade(short demanda) {
+	    return capacidadeUsada + demanda < getCapacidade();
+	}
+
+	// Esta funcao assume que o teste de capacidade ja foi realizado
+	public void adicionaDadosVertices(Vertice vertice) {
+	    acrescentaDistancia(findDistance(vertice));
+	    diminuiCapacidade(vertice.getDemanda());
+	}
+
     }
 
     private static class Solucao {
@@ -61,24 +134,34 @@ class Main {
 	private List<Mediana> medianas = new ArrayList<>();
 
 	public Solucao() {
-	    // algoritmo de resolver
-
 	}
 
 	public void mutate() {
 	    Random rand = new Random();
 	    int index = rand.nextInt(nrMedianas);
-	    this.setGene(index, 1 - this.getGene(index)); // flip
+	    this.getMedianas().remove(index);
+	    Vertice v = null;
+	    boolean trocou = false;
+	    do {
+		index = rand.nextInt(nrVertices);
+		v = vertices[index];
+		if (!this.getMedianas().contains(v)) {
+		    this.getMedianas().add(new Mediana(v));
+		    trocou = true;
+		}
+	    } while (!trocou);
 	}
 
-	public void evaluate() {
+	public void evaluate(int indicesPercorridos) {
+	    if (nrVertices - indicesPercorridos > 0) {
+		penaliza(PENALIZACAO + (1 - (indicesPercorridos / nrVertices)));
+	    }
 	    int fitness = 0;
 	    for (Mediana mediana : medianas) {
-		for (Vertice vertice : mediana.getVertices()) {
-		    fitness += mediana.findDistance(vertice);
-		}
+		fitness += mediana.getSomaDasDistancias();
 	    }
 	    qualidade = fitness;
+	    System.out.println(" Qualidade LOCAL = " + qualidade);
 	}
 
 	public List<Mediana> getMedianas() {
@@ -87,6 +170,48 @@ class Main {
 
 	public double getQualidade() {
 	    return qualidade;
+	}
+
+	public int geraRand() {
+	    criaPrimeirasMedianas();
+	    return ligaVerticesAsMedianasERetornaUltimoIndice();
+	}
+
+	private int ligaVerticesAsMedianasERetornaUltimoIndice() {
+	    int nrIndicesAdicionados = 0;
+
+	    for (int j = 0; j < nrVertices; j++) {
+		if (!(vertices[j] instanceof Mediana)) {
+		    // TODO testar se esta mediana será alterada
+		    Mediana mediana = vertices[j].encontraMedianaMaisProximaComCapacidade(getMedianas());
+		    if (mediana != null) {
+			mediana.adicionaDadosVertices(vertices[j]);
+			nrIndicesAdicionados++;
+		    }
+		}
+	    }
+	    return nrIndicesAdicionados;
+	}
+
+	private void criaPrimeirasMedianas() {
+	    short nrMed = 0;
+	    while (nrMed < nrMedianas) {
+		int indice = randomizer.nextInt(nrVertices);
+		Vertice v = vertices[indice];
+		if (!getMedianas().contains(v)) {
+		    adicionaMediana(v);
+		    nrMed++;
+		}
+	    }
+	}
+
+	private void adicionaMediana(Vertice v) {
+	    this.medianas.add(new Mediana(v));
+
+	}
+
+	public void penaliza(double porcentagemPenalizacao) {
+	    qualidade = qualidade * porcentagemPenalizacao;
 	}
 
     }
@@ -101,29 +226,42 @@ class Main {
 	    // init population
 	    for (int i = 0; i < TAM_POP; i++) {
 		solucoes[i] = new Solucao();
-		solucoes[i].evaluate();
-	    }
 
+		int indicesPercorridos = solucoes[i].geraRand();
+		solucoes[i].evaluate(indicesPercorridos);
+	    }
 	    this.evaluateTotal();
 	}
 
-	public Solucao[] crossover(Solucao velha1, Solucao velha2) {
+	public Solucao[] crossover(Solucao velha0, Solucao velha1) {
 	    Solucao[] newIndiv = new Solucao[2];
 	    newIndiv[0] = new Solucao();
 	    newIndiv[1] = new Solucao();
 
+	    if (velha0.getMedianas().size() != 10)
+		System.out.println("merda");
+	    if (velha1.getMedianas().size() != 10)
+		System.out.println("merda");
+
 	    int randPoint = randomizer.nextInt(nrMedianas);
 	    int i;
-	    for (i = 0; i < randPoint; ++i) {
-		if (!velha1.getMedianas().contains(velha2.getMedianas().get(i))
-			&& !velha2.getMedianas().contains(velha1.getMedianas().get(i))) {
+	    for (i = 0; i < nrMedianas; i++) {
+		if (i < randPoint && !velha1.getMedianas().contains(velha0.getMedianas().get(i))
+			&& !velha0.getMedianas().contains(velha1.getMedianas().get(i))) {
 		    newIndiv[0].getMedianas().add(velha1.getMedianas().get(i));
-		    newIndiv[1].getMedianas().add(velha2.getMedianas().get(i));
+
+		    newIndiv[1].getMedianas().add(velha0.getMedianas().get(i));
+		} else {
+		    newIndiv[0].getMedianas().add(velha0.getMedianas().get(i));
+		    newIndiv[1].getMedianas().add(velha1.getMedianas().get(i));
 		}
 	    }
 
-	    newIndiv[0].evaluate();
-	    newIndiv[1].evaluate();
+	    int indicesPercorridos0 = newIndiv[0].ligaVerticesAsMedianasERetornaUltimoIndice();
+	    newIndiv[0].evaluate(indicesPercorridos0);
+
+	    int indicesPercorridos1 = newIndiv[1].ligaVerticesAsMedianasERetornaUltimoIndice();
+	    newIndiv[1].evaluate(indicesPercorridos1);
 
 	    return newIndiv;
 	}
@@ -133,7 +271,7 @@ class Main {
 	    double currentMin = 1.0;
 	    double currentVal;
 
-	    for (int idx = 0; idx < 100; ++idx) {
+	    for (int idx = 0; idx < TAM_POP; ++idx) {
 		currentVal = solucoes[idx].getQualidade();
 		if (currentVal < currentMin) {
 		    currentMin = currentVal;
@@ -146,19 +284,19 @@ class Main {
 
 	public double evaluateTotal() {
 	    this.totalFitness = 0.0;
-	    for (int i = 0; i < 100; i++) {
+	    for (int i = 0; i < TAM_POP; i++) {
 		this.totalFitness += solucoes[i].getQualidade();
 	    }
 	    return this.totalFitness;
 	}
 
 	public Solucao rouletteWheelSelection() {
-	    double randNum = randomizer.nextDouble() * this.totalFitness;
-	    int idx;
-	    for (idx = 0; idx < TAM_POP && randNum > 0; ++idx) {
-		randNum -= solucoes[idx].getQualidade();
-	    }
-	    return solucoes[idx - 1];
+	    // double randNum = randomizer.nextDouble() * this.totalFitness;
+	    int idx = randomizer.nextInt(TAM_POP);
+	    // for (idx = 0; idx < TAM_POP && randNum > 0; ++idx) {
+	    // randNum -= solucoes[idx].getQualidade();
+	    // }
+	    return solucoes[idx];
 	}
 
 	public double getTotalFitness() {
@@ -172,24 +310,24 @@ class Main {
     }
 
     private static final short TEMPO_MAX_MILISSEGUNDOS = 8000;
-    private static final short ELITISMO = 6;
-    private static final float TAXA_MUTACAO = 0.1f;
-    private static final float TAXA_CRUZAMENTO = 0.7f;
-    private static final short TAM_POP = 100;
-    private static final short MAX_ITER = 2000;
+    private static final short ELITISMO = 0;
+    private static final float TAXA_MUTACAO = 0.0f;
+    private static final short TAM_POP = 20;
+    private static final short MAX_ITER = 20;
+    private static final short PENALIZACAO = 10;
 
     private static int nrVertices;
     private static int nrMedianas;
-    private static Vertice[] medianas;
+    private static Vertice[] vertices;
     static Random randomizer = new Random();
 
     public static void main(String[] args) throws FileNotFoundException {
 	Scanner scan = new Scanner(new FileReader(Main.class.getResource("1.in").getPath()));
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
-	medianas = new Vertice[nrVertices];
+	vertices = new Vertice[nrVertices];
 	for (int i = 0; i < nrVertices; i++) {
-	    medianas[i] = new Vertice(scan.nextInt(), scan.nextInt(), scan.nextShort(), scan.nextShort());
+	    vertices[i] = new Vertice(scan.nextInt(), scan.nextInt(), scan.nextShort(), scan.nextShort());
 	}
 	scan.close();
 
@@ -203,27 +341,32 @@ class Main {
 
 	long tempoFinal = System.currentTimeMillis() + TEMPO_MAX_MILISSEGUNDOS;
 	int count;
-	for (int iter = 0; iter < MAX_ITER && tempoFinal > System.currentTimeMillis(); iter++) {
+	// for (int iter = 0; iter < MAX_ITER && tempoFinal >
+	// System.currentTimeMillis(); iter++) {
+	for (int iter = 0; iter < MAX_ITER; iter++) {
 	    count = 0;
 
 	    // Elitism
 	    for (int x = 0; x < ELITISMO; ++x) {
+		// CORRIGIR
 		newPop[count] = pop.findBestSolucao();
 		count++;
 	    }
 	    while (count < TAM_POP) {
 		Solucao pai = pop.rouletteWheelSelection();
 		Solucao mae = pop.rouletteWheelSelection();
-		if (randomizer.nextDouble() < TAXA_CRUZAMENTO) {
-		    indiv = pop.crossover(mae, pai);
-		}
+		indiv = pop.crossover(mae, pai);
 
 		// Mutation
 		if (randomizer.nextDouble() < TAXA_MUTACAO) {
 		    indiv[0].mutate();
+		    int indicesPercorridos = indiv[0].ligaVerticesAsMedianasERetornaUltimoIndice();
+		    indiv[0].evaluate(indicesPercorridos);
 		}
 		if (randomizer.nextDouble() < TAXA_MUTACAO) {
 		    indiv[1].mutate();
+		    int indicesPercorridos = indiv[1].ligaVerticesAsMedianasERetornaUltimoIndice();
+		    indiv[1].evaluate(indicesPercorridos);
 		}
 
 		// add to new population
@@ -235,12 +378,12 @@ class Main {
 
 	    // reevaluate current population
 	    pop.evaluateTotal();
-	    System.out.print("Maior qualidade = " + pop.getTotalFitness());
-	    System.out.println(" Maior qualidade = " + pop.findBestSolucao().getQualidade());
+	    System.out.print("Qualidade total = " + pop.getTotalFitness());
+	    System.out.println(" Máxima qualidade = " + pop.findBestSolucao().getQualidade());
 	}
 
 	Solucao bestIndiv = pop.findBestSolucao(); // {//
-	System.out.println(bestIndiv);
+	System.out.println(bestIndiv.getQualidade());
     }
 
 }
