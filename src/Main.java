@@ -1,5 +1,6 @@
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,9 +12,20 @@ import java.util.Scanner;
  *
  * @date 10/07/2017
  * 
- * @opt 17.288,99 Será?
+ * @opt 17.288,99
  */
 class Main {
+    // PARAMETROS
+    private static final short TEMPO_MAX_MILISSEGUNDOS = 9300;
+    private static final short FACILIDADE_PAI_BOM = 70;
+    private static final short FACILIDADE_MAE_BOM = 100;
+    private static final short ELITISMO = 500;
+    private static final float TAXA_MUTACAO = 0.05f;
+    // private static final short ITER_SEM_MOD = 50;
+    private static final short TAM_POP = 7000;
+    private static final short PENALIZACAO = Short.MAX_VALUE;
+    private static final short ALEATORIEDADE_ROLETA = 1000;
+
     /**
      * Classe que representa o vertice que sera carregado e mantido inalterado
      *
@@ -83,6 +95,20 @@ class Main {
 	    return medianas.get(idxMin);
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+	    if (this == obj)
+		return true;
+	    if (obj == null)
+		return false;
+	    Vertice other = (Vertice) obj;
+	    if (x != other.x)
+		return false;
+	    if (y != other.y)
+		return false;
+	    return true;
+	}
+
     }
 
     /**
@@ -90,11 +116,12 @@ class Main {
      * Classe que e um vertice que representa uma mediana
      */
     private static class Mediana extends Vertice {
-	private int somaDasDistancias;
+	private double somaDasDistancias;
 	private short capacidadeUsada;
 
 	public Mediana(Vertice v) {
 	    super(v.getX(), v.getY(), v.getCapacidade(), v.getDemanda());
+	    capacidadeUsada = v.getDemanda();
 	}
 
 	/**
@@ -102,14 +129,14 @@ class Main {
 	 * @return distancia entre a mediana e o vertice
 	 */
 	public double encontraDistancia(Vertice vertice) {
-	    int diferencaX = this.getX() - vertice.getX();
-	    int diferencaY = this.getY() - vertice.getY();
+	    int diferencaX = vertice.getX() - this.getX();
+	    int diferencaY = vertice.getY() - this.getY();
 	    double dist = Math.pow(diferencaX, 2) + Math.pow(diferencaY, 2);
 	    double distance = Math.sqrt(dist);
 	    return distance;
 	}
 
-	public int getSomaDasDistancias() {
+	public double getSomaDasDistancias() {
 	    return somaDasDistancias;
 	}
 
@@ -122,7 +149,7 @@ class Main {
 	}
 
 	public boolean temCapacidade(short demanda) {
-	    return capacidadeUsada + demanda < getCapacidade();
+	    return capacidadeUsada + demanda <= getCapacidade();
 	}
 
 	// Esta funcao assume que o teste de capacidade ja foi realizado
@@ -137,13 +164,16 @@ class Main {
 		return true;
 	    if (obj == null)
 		return false;
-	    Vertice other = (Vertice) obj;
-	    if (x != other.x)
+	    if (getClass() != obj.getClass())
 		return false;
-	    if (y != other.y)
+	    Mediana other = (Mediana) obj;
+	    if (capacidadeUsada != other.capacidadeUsada)
+		return false;
+	    if (Double.doubleToLongBits(somaDasDistancias) != Double.doubleToLongBits(other.somaDasDistancias))
 		return false;
 	    return true;
 	}
+
     }
 
     /**
@@ -182,14 +212,14 @@ class Main {
 	}
 
 	public void avaliarQualidadeSolucao(int indicesPercorridos) {
-	    if (nrVertices - indicesPercorridos > 0) {
-		penaliza(PENALIZACAO + (1 - (indicesPercorridos / nrVertices)));
-	    }
 	    int fitness = 0;
 	    for (Mediana mediana : medianas) {
 		fitness += mediana.getSomaDasDistancias();
 	    }
 	    qualidade = fitness;
+	    if (nrVertices - (indicesPercorridos + medianas.size()) > 0) {
+		penaliza(PENALIZACAO + (1 - (indicesPercorridos / nrVertices)));
+	    }
 	}
 
 	public int geraSolucaoAleatoria() {
@@ -201,7 +231,7 @@ class Main {
 	    int nrIndicesAdicionados = 0;
 
 	    for (int j = 0; j < nrVertices; j++) {
-		if (!(vertices[j] instanceof Mediana)) {
+		if (!(medianas.contains(vertices[j]))) {
 		    Mediana mediana = vertices[j].encontraMedianaMaisProximaComCapacidade(getMedianas());
 		    if (mediana != null) {
 			mediana.adicionaDadosVertices(vertices[j]);
@@ -330,23 +360,16 @@ class Main {
 	/**
 	 * Operador de selecao
 	 */
-	public Solucao selecaoDeRoleta() {
-	    double randNum = randomizer.nextDouble() * (this.totalFitness / 2);
-	    int idx = randomizer.nextInt(TAM_POP);
-	    for (idx = 0; idx < TAM_POP && randNum > 0; ++idx) {
-		randNum -= solucoes[idx].getQualidade();
+	public Solucao selecaoDeRoleta(int facilidadeDosMelhores) {
+	    double randNum = this.totalFitness / randomizer.nextInt(ALEATORIEDADE_ROLETA);
+	    int idx;
+	    for (idx = 0; idx < TAM_POP - 1 && randNum > 0; ++idx) {
+		randNum -= facilidadeDosMelhores * solucoes[idx].getQualidade();
 	    }
 	    return solucoes[idx];
 	}
 
     }
-
-    private static final short TEMPO_MAX_MILISSEGUNDOS = 10000;
-    private static final short ELITISMO = 100;
-    private static final float TAXA_MUTACAO = 0.05f;
-    // private static final short ITER_SEM_MOD = 50;
-    private static final short TAM_POP = 5000;
-    private static final short PENALIZACAO = 20000;
 
     private static int nrVertices;
     private static int nrMedianas;
@@ -354,6 +377,8 @@ class Main {
     static Random randomizer = new Random();
 
     public static void main(String[] args) throws FileNotFoundException {
+	long start = System.currentTimeMillis();
+
 	Scanner scan = new Scanner(new FileReader(Main.class.getResource("1.in").getPath()));
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
@@ -363,7 +388,12 @@ class Main {
 	}
 	scan.close();
 
-	System.out.println(pMedianaCapacitada());
+	System.out.println("Soma das distancias: " + pMedianaCapacitada());
+	System.out.println("Millisegundos: " + (System.currentTimeMillis() - start));
+	System.out.println("Memoria Usada: "
+		+ new DecimalFormat("#.##").format(
+			((double) (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576))
+		+ "Mb");
     }
 
     private static double pMedianaCapacitada() {
@@ -388,15 +418,15 @@ class Main {
 
 	    // Conceito de Elitismo
 	    for (int x = 0; x < ELITISMO; ++x) {
-		newPop[count] = pop.encontraMelhorSolucaoDaLista();
+		newPop[count] = pop.getSolucoes()[count];
 		count++;
 	    }
 	    while (count < TAM_POP) {
-		Solucao pai = pop.selecaoDeRoleta();
-		Solucao mae = pop.selecaoDeRoleta();
+		Solucao pai = pop.selecaoDeRoleta(FACILIDADE_PAI_BOM);
+		Solucao mae = pop.selecaoDeRoleta(FACILIDADE_MAE_BOM);
 		indiv = pop.fazCruzamento(mae, pai);
 
-		 // Conceito de Mutacao
+		// Conceito de Mutacao
 		if (randomizer.nextDouble() < TAXA_MUTACAO) {
 		    indiv[0].fazMutacao();
 		    int indicesPercorridos = indiv[0].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
