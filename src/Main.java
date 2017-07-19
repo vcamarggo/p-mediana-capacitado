@@ -16,13 +16,14 @@ import java.util.Scanner;
  */
 class Main {
     // PARAMETROS
-    private static final short TEMPO_MAX_MILISSEGUNDOS = 9300;
+    // private static final short TEMPO_MAX_MILISSEGUNDOS = 9300;
+    private static final short TEMPO_MAX_MILISSEGUNDOS = 9000;
     private static final short FACILIDADE_PAI_BOM = 70;
     private static final short FACILIDADE_MAE_BOM = 100;
-    private static final short ELITISMO = 500;
+    private static final int ELITISMO = 6000;
     private static final float TAXA_MUTACAO = 0.05f;
     // private static final short ITER_SEM_MOD = 50;
-    private static final short TAM_POP = 7000;
+    private static final int TAM_POP = 15000;
     private static final short PENALIZACAO = Short.MAX_VALUE;
     private static final short ALEATORIEDADE_ROLETA = 1000;
 
@@ -301,36 +302,36 @@ class Main {
 	/**
 	 * Operador de reprodumecao
 	 * 
-	 * @param velha0
-	 * @param velha1
+	 * @param pai
+	 * @param mae
 	 * @return duas solucoes baseadas nos parametros
 	 */
-	public Solucao[] fazCruzamento(Solucao velha0, Solucao velha1) {
-	    Solucao[] newIndiv = new Solucao[2];
-	    newIndiv[0] = new Solucao();
-	    newIndiv[1] = new Solucao();
+	public Solucao[] fazCruzamento(Solucao pai, Solucao mae) {
+	    Solucao[] filhos = new Solucao[2];
+	    filhos[0] = new Solucao();
+	    filhos[1] = new Solucao();
 
 	    int randPoint = randomizer.nextInt(nrMedianas);
 	    int i;
 	    for (i = 0; i < nrMedianas; i++) {
-		if (i < randPoint && !velha1.getMedianas().contains(velha0.getMedianas().get(i))
-			&& !velha0.getMedianas().contains(velha1.getMedianas().get(i))) {
-		    newIndiv[0].getMedianas().add(velha1.getMedianas().get(i));
+		if (i < randPoint && !mae.getMedianas().contains(pai.getMedianas().get(i))
+			&& !pai.getMedianas().contains(mae.getMedianas().get(i))) {
+		    filhos[0].getMedianas().add(mae.getMedianas().get(i));
 
-		    newIndiv[1].getMedianas().add(velha0.getMedianas().get(i));
+		    filhos[1].getMedianas().add(pai.getMedianas().get(i));
 		} else {
-		    newIndiv[0].getMedianas().add(velha0.getMedianas().get(i));
-		    newIndiv[1].getMedianas().add(velha1.getMedianas().get(i));
+		    filhos[0].getMedianas().add(pai.getMedianas().get(i));
+		    filhos[1].getMedianas().add(mae.getMedianas().get(i));
 		}
 	    }
 
-	    int indicesPercorridos0 = newIndiv[0].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
-	    newIndiv[0].avaliarQualidadeSolucao(indicesPercorridos0);
+	    int indicesPercorridos0 = filhos[0].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
+	    filhos[0].avaliarQualidadeSolucao(indicesPercorridos0);
 
-	    int indicesPercorridos1 = newIndiv[1].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
-	    newIndiv[1].avaliarQualidadeSolucao(indicesPercorridos1);
+	    int indicesPercorridos1 = filhos[1].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
+	    filhos[1].avaliarQualidadeSolucao(indicesPercorridos1);
 
-	    return newIndiv;
+	    return filhos;
 	}
 
 	// A melhor solucao e a que tem menor qualidade (soma das distancia)
