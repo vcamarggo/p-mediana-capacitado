@@ -1,6 +1,4 @@
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,7 +6,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 /**
- * @author Vinícius Camargo , Fernando Carvalho
+ * @author Vinicius Camargo , Fernando Carvalho
  *
  * @date 10/07/2017
  * 
@@ -17,7 +15,7 @@ import java.util.Scanner;
 class Main {
     // PARAMETROS
     // private static final short TEMPO_MAX_MILISSEGUNDOS = 9300;
-    private static final short TEMPO_MAX_MILISSEGUNDOS = 9000;
+    private static final int TEMPO_MAX_MILISSEGUNDOS = 9000;
     private static final short FACILIDADE_PAI_BOM = 70;
     private static final short FACILIDADE_MAE_BOM = 100;
     private static final int ELITISMO = 6000;
@@ -32,12 +30,12 @@ class Main {
      *
      */
     private static class Vertice {
-	protected int x;
-	protected int y;
+	protected double x;
+	protected double y;
 	private short capacidade;
 	private short demanda;
 
-	public Vertice(int x, int y, short capacidade, short demanda) {
+	public Vertice(double x, double y, short capacidade, short demanda) {
 	    super();
 	    this.x = x;
 	    this.y = y;
@@ -45,11 +43,11 @@ class Main {
 	    this.demanda = demanda;
 	}
 
-	public int getX() {
+	public double getX() {
 	    return x;
 	}
 
-	public int getY() {
+	public double getY() {
 	    return y;
 	}
 
@@ -59,15 +57,6 @@ class Main {
 
 	public short getDemanda() {
 	    return demanda;
-	}
-
-	@Override
-	public int hashCode() {
-	    final int prime = 31;
-	    int result = 1;
-	    result = prime * result + x;
-	    result = prime * result + y;
-	    return result;
 	}
 
 	/**
@@ -97,15 +86,29 @@ class Main {
 	}
 
 	@Override
+	public int hashCode() {
+	    final int prime = 31;
+	    int result = 1;
+	    long temp;
+	    temp = Double.doubleToLongBits(x);
+	    result = prime * result + (int) (temp ^ (temp >>> 32));
+	    temp = Double.doubleToLongBits(y);
+	    result = prime * result + (int) (temp ^ (temp >>> 32));
+	    return result;
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 	    if (this == obj)
 		return true;
 	    if (obj == null)
 		return false;
-	    Vertice other = (Vertice) obj;
-	    if (x != other.x)
+	    if (getClass() != obj.getClass())
 		return false;
-	    if (y != other.y)
+	    Vertice other = (Vertice) obj;
+	    if (Double.doubleToLongBits(x) != Double.doubleToLongBits(other.x))
+		return false;
+	    if (Double.doubleToLongBits(y) != Double.doubleToLongBits(other.y))
 		return false;
 	    return true;
 	}
@@ -130,8 +133,8 @@ class Main {
 	 * @return distancia entre a mediana e o vertice
 	 */
 	public double encontraDistancia(Vertice vertice) {
-	    int diferencaX = vertice.getX() - this.getX();
-	    int diferencaY = vertice.getY() - this.getY();
+	    double diferencaX = vertice.getX() - this.getX();
+	    double diferencaY = vertice.getY() - this.getY();
 	    double dist = Math.pow(diferencaX, 2) + Math.pow(diferencaY, 2);
 	    double distance = Math.sqrt(dist);
 	    return distance;
@@ -213,7 +216,7 @@ class Main {
 	}
 
 	public void avaliarQualidadeSolucao(int indicesPercorridos) {
-	    int fitness = 0;
+	    double fitness = 0;
 	    for (Mediana mediana : medianas) {
 		fitness += mediana.getSomaDasDistancias();
 	    }
@@ -312,8 +315,7 @@ class Main {
 	    filhos[1] = new Solucao();
 
 	    int randPoint = randomizer.nextInt(nrMedianas);
-	    int i;
-	    for (i = 0; i < nrMedianas; i++) {
+	    for (int i = 0; i < nrMedianas; i++) {
 		if (i < randPoint && !mae.getMedianas().contains(pai.getMedianas().get(i))
 			&& !pai.getMedianas().contains(mae.getMedianas().get(i))) {
 		    filhos[0].getMedianas().add(mae.getMedianas().get(i));
@@ -378,23 +380,28 @@ class Main {
     static Random randomizer = new Random();
 
     public static void main(String[] args) throws FileNotFoundException {
-	long start = System.currentTimeMillis();
+	// long start = System.currentTimeMillis();
 
-	Scanner scan = new Scanner(new FileReader(Main.class.getResource("1.in").getPath()));
+	Scanner scan = new Scanner(System.in);
+	// Scanner scan = new Scanner(System.in);
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
+	scan.nextLine();
 	vertices = new Vertice[nrVertices];
 	for (int i = 0; i < nrVertices; i++) {
-	    vertices[i] = new Vertice(scan.nextInt(), scan.nextInt(), scan.nextShort(), scan.nextShort());
+	    vertices[i] = new Vertice(Double.parseDouble(scan.next()), Double.parseDouble(scan.next()),
+		    scan.nextShort(), scan.nextShort());
 	}
 	scan.close();
 
-	System.out.println("Soma das distancias: " + pMedianaCapacitada());
-	System.out.println("Millisegundos: " + (System.currentTimeMillis() - start));
-	System.out.println("Memoria Usada: "
-		+ new DecimalFormat("#.##").format(
-			((double) (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576))
-		+ "Mb");
+	System.out.println(pMedianaCapacitada());
+	// System.out.println("Millisegundos: " + (System.currentTimeMillis() -
+	// start));
+	// System.out.println("Memoria Usada: "
+	// + new DecimalFormat("#.##").format(
+	// ((double) (Runtime.getRuntime().totalMemory() -
+	// Runtime.getRuntime().freeMemory()) / 1048576))
+	// + "Mb");
     }
 
     private static double pMedianaCapacitada() {
