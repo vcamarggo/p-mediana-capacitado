@@ -389,8 +389,8 @@ class Main {
     public static void main(String[] args) throws FileNotFoundException {
         long start = System.currentTimeMillis();
 
-        Scanner scan = new Scanner(new FileReader(Main.class.getResource("3.in").getPath()));
-        // Scanner scan = new Scanner(System.in);
+        //Scanner scan = new Scanner(new FileReader(Main.class.getResource("3.in").getPath()));
+         Scanner scan = new Scanner(System.in);
         nrVertices = scan.nextInt();
         nrMedianas = scan.nextShort();
         scan.nextLine();
