@@ -1,0 +1,43 @@
+Classes utilizadas:
+	Main: Classe que encapsula todas as partes do algoritmo genético, sua representação é feita em uma classe única por restrição do sistema run.codes; Esta classe possui os seguintes atributos
+		TEMPO_MAX_MILLISEGUNDOS, tempo máximo em milissegundos que o algoritmo irá rodar caso este esteja em modo de execução por tempo;
+		ELITISMO, que indica quantas soluções serão preservadas de uma geração da população para a próxima;
+		TAXA_MUTACAO, que indica qual a taxa de soluções na qual a mutação ocorre;
+		ITER_SEM_MOD, número de iterações consecutivas na qual o algoritmo finaliza caso não haja mudanças no melhor resultado;
+		TAM_POP, tamanho da população de soluções;
+		PENALIZACAO, funcao de penalizacao, que empericamente estabeleceu-se em 32000;
+		nrVertices, lido do arquivo;
+		nrMedianas, lido do arquivo;
+		vertices, vetor estático com os vértices lidos do arquivo;
+		vetorDistancia, vetor no qual soma-se as distancias de todos para todos e as armazena par auso posterior;
+		randomizer, inicia uma instância aleatória para um randomizador;
+	E os seguintes métodos:
+		main, que recebe os dados do arquivo/terminal e carrega os dados no vetor de distancias, após isto, executa a p-mediana-capacitado;
+		calculaDistancia, que preenche o vetorDistancia com as distâncias de cada vértice para todos os outros;
+		encontraDistancia, que retorna a distância entre dois vértices;
+		p-mediana-capacitado, que retorna a solução da aplicação do algoritmo da p-mediana-capacitado, passando por solução inicial, iterações segundo critério de não-modificação da melhor solução, elitismo, abordagem de solução geracional, havendo ainda a possibildiade de mutação.
+	Vertice: Classe que representa um vértice do problema da p-mediana-capacitado, contendo os seguintes atributos:
+		id, que é recebido em ordem de leitura do arquivo;
+		x, que representa a posição do vértice no eixo x;
+		y, que representa a posição do vértice´no eixo y;
+		capacidade, que representa a capacidade de um vértice caso este seja selecionado como mediana;
+		demanda, que representa o quanto este vértice precisa consumir da capacidade da mediana.
+	E os seguintes métodos:
+		encontraMedianaMaisProximaComCapacidade, que encontra a mediana mais próxima que ainda tem capacidade disponível, sempre levando em conta que uma mediana já consome por padrão sua própria demanda.
+	Mediana: classe que representa uma mediana, e ainda sim é um tipo de vértice com algumas informações extras, como:
+		somaDasDistancias, que armazena a soma das distâncias da mediana para os vértices ligados a ela;
+		capacidadeUsada, que armazena a capacidade da mediana que já foi utilizada;
+	E os seguintes métodos:
+		consultaDistancia, na qual retorna-se a distância entre uma mediana e o vértice;
+		adicionaDadosVertices, que adiciona a distância do vértice na soma das distâncias e diminui a capacidade disponível da mediana;
+	Solução: classe que representa uma solução, possuindo uma qualidade e uma lista de medianas. Como métodos ela possui:
+		fazMutacao, que é ativado pela taxa de mutação as vezes, pegando um indice aleatório da solução e substituindo por alugm outro que ela ainda não possua. Este método representa o operador de mutação do algoritmo genético;
+		avaliarQualidadeSolucao, que avalia a qualidade de uma solução e penaliza caso necessário;
+		geraSolucaoAleatoria, que junto com a função criaPrimrasMedianas, cria uma primeira solução para o problema.
+		ligaVerticesAsMedianasERetornaUltimoIndiceUsado, que tenta ligar todos os vértices a alguma mediana criada anteriormente e retorna o indice do maior vértice utilizado, sendo esta informação utilizada no caso da necessidade de penalização (número de índices menor do que a número de vértices menos número de medianas);
+	População: classe que representa o conjunto das soluções, tendo como métodos:
+		fazCruzamento, que representa o operador de cruzamento, recebendo um pai e uma mãe e cruzando suas medianas até um ponto aleatório, a menos que o pai ou mãe já contenham esta mediana. Cada aplicação desta função em duas soluções, gera duas novas soluções;
+		encontraMelhorSolucaoDaLista, que encontra a melhor solução da população;
+		avaliarQualidadePopulacao, que soma e retorna a qualidade de todas as soluções da população;
+		selecaoDeRoleta, que retorna uma solução pseudo-aleatória, já que há um grande viés intencional para que seja retornada uma boa solução. Este método representa o operador de seleção.
+	
