@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -22,11 +24,11 @@ class Main {
     private static final short FACILIDADE_MAE_BOM = 100;
     private static final int ELITISMO = 500;
     private static final float TAXA_MUTACAO = 0.05f;
-    private static final short ITER_SEM_MOD = 300;
-    private static final int ITER_SEM_MOD_BUSCA_LOCAL = 30000;
-    private static final int TAM_POP = 7000;
+    private static final short ITER_SEM_MOD = 150;
+    private static final int TAM_POP = 5000;
     private static final short PENALIZACAO = Short.MAX_VALUE;
     private static final short ALEATORIEDADE_ROLETA = 1000;
+    private static final short VIZINHOS_LOCAIS = 30;
 
     /**
      * Classe que representa o vertice que sera carregado e mantido inalterado
@@ -214,20 +216,22 @@ class Main {
 	/**
 	 * operador de mutacao
 	 */
-	public void fazMutacao() {
-	    Random rand = new Random();
-	    int index = rand.nextInt(nrMedianas);
-	    this.getMedianas().remove(index);
+	public void fazMutacao(int nrMod) {
+	    int index = 0;
+	    int i;
+	    for (i = 0; i < nrMod; ++i) {
+		index = randomizer.nextInt(this.getMedianas().size());
+		this.getMedianas().remove(index);
+	    }
+
 	    Vertice v = null;
-	    boolean trocou = false;
 	    do {
-		index = rand.nextInt(nrVertices);
+		index = randomizer.nextInt(nrVertices);
 		v = vertices[index];
 		if (!this.getMedianas().contains(v)) {
 		    this.getMedianas().add(new Mediana(v));
-		    trocou = true;
 		}
-	    } while (!trocou);
+	    } while (this.getMedianas().size() < nrMedianas);
 	    for (Mediana m : medianas) {
 		m.setCapacidadeUsada(m.getDemanda());
 	    }
@@ -403,9 +407,8 @@ class Main {
     static Random randomizer = new Random();
 
     public static void main(String[] args) throws FileNotFoundException {
-	long start = System.currentTimeMillis();
 
-	Scanner scan = new Scanner(new FileReader(Main.class.getResource("SJC2.dat").getPath()));
+	Scanner scan = new Scanner(new FileReader(Main.class.getResource("teste2.in").getPath()));
 	// Scanner scan = new Scanner(System.in);
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
@@ -418,47 +421,12 @@ class Main {
 	scan.close();
 
 	calculaDistancias();
-
 	System.out.println("P-Mediana-Capacitada");
-	Solucao melhorSolucao = pMedianaCapacitada();
-	System.out.println("Soma das distancias: " + new DecimalFormat("#.##").format(melhorSolucao.getQualidade()));
-	System.out.println("Millisegundos: " + (System.currentTimeMillis() - start));
-	System.out.println("Memoria Usada: "
-		+ new DecimalFormat("#.##").format(
-			((double) (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576))
-		+ "Mb");
+	System.out.println("Soma das distancias: " + new DecimalFormat("#.##").format(pMedianaCapacitada(false)));
 
-	start = System.currentTimeMillis();
 	System.out.println("P-Mediana-Capacitada-Com-Busca-Local");
-	System.out.println("Soma das distancias: " + new DecimalFormat("#.##").format(buscaLocal(melhorSolucao)));
-	System.out.println("Millisegundos: " + (System.currentTimeMillis() - start));
-	System.out.println("Memoria Usada: "
-		+ new DecimalFormat("#.##").format(
-			((double) (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576))
-		+ "Mb");
-    }
+	System.out.println("Soma das distancias: " + new DecimalFormat("#.##").format(pMedianaCapacitada(true)));
 
-    private static double buscaLocal(Solucao s) {
-	double melhor = Double.MAX_VALUE;
-	for (int nrSemMod = 0; nrSemMod < ITER_SEM_MOD_BUSCA_LOCAL;) {
-	    if (melhor <= s.getQualidade()) {
-		nrSemMod++;
-	    } else {
-		melhor = s.getQualidade();
-		nrSemMod = 0;
-		System.out.println(new DecimalFormat("#.##").format(melhor));
-	    }
-	    Solucao solucaoNova = s.clone();
-
-	    solucaoNova.fazMutacao();
-	    int indicesPercorridos = solucaoNova.ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
-	    solucaoNova.avaliarQualidadeSolucao(indicesPercorridos);
-
-	    if (solucaoNova.getQualidade() < s.getQualidade()) {
-		s = solucaoNova;
-	    }
-	}
-	return melhor;
     }
 
     private static void calculaDistancias() {
@@ -481,7 +449,7 @@ class Main {
 	return distance;
     }
 
-    private static Solucao pMedianaCapacitada() {
+    private static double pMedianaCapacitada(boolean comBuscaLocal) {
 	Populacao pop = new Populacao();
 	Solucao[] newPop = new Solucao[TAM_POP];
 	Solucao[] indiv = new Solucao[2];
@@ -493,16 +461,21 @@ class Main {
 	    count = 0;
 	    Arrays.sort(pop.getSolucoes());
 
+	    if (nrSemMod % 30 == 0 && comBuscaLocal)
+		System.out.println("Sem mod " + nrSemMod);
 	    if (melhor <= pop.getSolucoes()[0].getQualidade()) {
 		nrSemMod++;
 	    } else {
 		melhor = pop.getSolucoes()[0].getQualidade();
 		nrSemMod = 0;
-		// System.out.println(new DecimalFormat("#.##").format(melhor));
+		System.out.println("Melhor: " + new DecimalFormat("#.##").format(melhor));
 	    }
 
 	    // Conceito de Elitismo
 	    for (int x = 0; x < ELITISMO; ++x) {
+		if (comBuscaLocal) {
+		    fazBuscaLocal(pop, pop.getSolucoes()[count]);
+		}
 		newPop[count] = pop.getSolucoes()[count];
 		count++;
 	    }
@@ -513,16 +486,21 @@ class Main {
 
 		// Conceito de Mutacao
 		if (randomizer.nextDouble() < TAXA_MUTACAO) {
-		    indiv[0].fazMutacao();
+		    indiv[0].fazMutacao(randomizer.nextInt(nrMedianas));
 		    int indicesPercorridos = indiv[0].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
 		    indiv[0].avaliarQualidadeSolucao(indicesPercorridos);
 		}
 		if (randomizer.nextDouble() < TAXA_MUTACAO) {
-		    indiv[1].fazMutacao();
+		    indiv[1].fazMutacao(randomizer.nextInt(nrMedianas));
 		    int indicesPercorridos = indiv[1].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
 		    indiv[1].avaliarQualidadeSolucao(indicesPercorridos);
 		}
 
+		if (comBuscaLocal) {
+		    for (int i = 0; i < 2; i++) {
+			fazBuscaLocal(pop, indiv[i]);
+		    }
+		}
 		newPop[count] = indiv[0];
 		newPop[count + 1] = indiv[1];
 		count += 2;
@@ -532,7 +510,35 @@ class Main {
 	    pop.avaliarQualidadePopulacao();
 	}
 
-	return pop.encontraMelhorSolucaoDaLista();
+	return pop.encontraMelhorSolucaoDaLista().getQualidade();
+    }
+
+    private static void fazBuscaLocal(Populacao pop, Solucao s) {
+	Solucao newSolucao = s.clone();
+	Solucao oldSolucao = s;
+	boolean trocou;
+	do {
+	    trocou = false;
+	    newSolucao = pegarMenorVizinhoLocal(oldSolucao.clone());
+	    if (newSolucao.getQualidade() < oldSolucao.getQualidade()) {
+		oldSolucao = newSolucao;
+		trocou = true;
+	    }
+	} while (newSolucao.getQualidade() < oldSolucao.getQualidade() || trocou);
+    }
+
+    private static Solucao pegarMenorVizinhoLocal(Solucao s) {
+	HashSet<Solucao> vizinhosLocais = new HashSet<>();
+
+	for (int i = 0; i < VIZINHOS_LOCAIS; i++) {
+	    Solucao sClone = s.clone();
+	    sClone.fazMutacao(1);
+	    int indicesPercorridos = sClone.ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
+	    sClone.avaliarQualidadeSolucao(indicesPercorridos);
+	    vizinhosLocais.add(sClone);
+	}
+	vizinhosLocais.add(s);
+	return Collections.min(vizinhosLocais, null);
     }
 
 }
