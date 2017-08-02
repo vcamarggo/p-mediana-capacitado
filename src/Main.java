@@ -22,13 +22,13 @@ class Main {
     // PARAMETROS
     private static final short FACILIDADE_PAI_BOM = 50;
     private static final short FACILIDADE_MAE_BOM = 100;
-    private static final int ELITISMO = 500;
+    private static final int ELITISMO = 300;
     private static final float TAXA_MUTACAO = 0.05f;
     private static final short ITER_SEM_MOD = 150;
     private static final int TAM_POP = 5000;
     private static final short PENALIZACAO = Short.MAX_VALUE;
     private static final short ALEATORIEDADE_ROLETA = 1000;
-    private static final short VIZINHOS_LOCAIS = 30;
+    private static final short VIZINHOS_LOCAIS = 100;
 
     /**
      * Classe que representa o vertice que sera carregado e mantido inalterado
@@ -408,7 +408,7 @@ class Main {
 
     public static void main(String[] args) throws FileNotFoundException {
 
-	Scanner scan = new Scanner(new FileReader(Main.class.getResource("teste2.in").getPath()));
+	Scanner scan = new Scanner(new FileReader(Main.class.getResource("1.in").getPath()));
 	// Scanner scan = new Scanner(System.in);
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
@@ -461,8 +461,9 @@ class Main {
 	    count = 0;
 	    Arrays.sort(pop.getSolucoes());
 
-	    if (nrSemMod % 30 == 0 && comBuscaLocal)
-		System.out.println("Sem mod " + nrSemMod);
+	    if (comBuscaLocal && nrSemMod % 30 == 0 && nrSemMod > 0)
+		System.out.println("Sem mod: " + nrSemMod);
+
 	    if (melhor <= pop.getSolucoes()[0].getQualidade()) {
 		nrSemMod++;
 	    } else {
@@ -473,9 +474,6 @@ class Main {
 
 	    // Conceito de Elitismo
 	    for (int x = 0; x < ELITISMO; ++x) {
-		if (comBuscaLocal) {
-		    fazBuscaLocal(pop, pop.getSolucoes()[count]);
-		}
 		newPop[count] = pop.getSolucoes()[count];
 		count++;
 	    }
@@ -495,15 +493,14 @@ class Main {
 		    int indicesPercorridos = indiv[1].ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
 		    indiv[1].avaliarQualidadeSolucao(indicesPercorridos);
 		}
-
-		if (comBuscaLocal) {
-		    for (int i = 0; i < 2; i++) {
-			fazBuscaLocal(pop, indiv[i]);
-		    }
-		}
 		newPop[count] = indiv[0];
 		newPop[count + 1] = indiv[1];
 		count += 2;
+	    }
+	    for (count = 0; count < TAM_POP; count++) {
+		if (comBuscaLocal) {
+		    pop.getSolucoes()[count] = fazBuscaLocal(pop, pop.getSolucoes()[count]);
+		}
 	    }
 	    // Conceito de Nova Geracao Completa
 	    pop.setPopulation(newPop);
@@ -513,7 +510,7 @@ class Main {
 	return pop.encontraMelhorSolucaoDaLista().getQualidade();
     }
 
-    private static void fazBuscaLocal(Populacao pop, Solucao s) {
+    private static Solucao fazBuscaLocal(Populacao pop, Solucao s) {
 	Solucao newSolucao = s.clone();
 	Solucao oldSolucao = s;
 	boolean trocou;
@@ -525,6 +522,7 @@ class Main {
 		trocou = true;
 	    }
 	} while (newSolucao.getQualidade() < oldSolucao.getQualidade() || trocou);
+	return oldSolucao;
     }
 
     private static Solucao pegarMenorVizinhoLocal(Solucao s) {
@@ -532,7 +530,7 @@ class Main {
 
 	for (int i = 0; i < VIZINHOS_LOCAIS; i++) {
 	    Solucao sClone = s.clone();
-	    sClone.fazMutacao(1);
+	    sClone.fazMutacao((int) (nrMedianas * 0.1));
 	    int indicesPercorridos = sClone.ligaVerticesAsMedianasERetornaUltimoIndiceUsado();
 	    sClone.avaliarQualidadeSolucao(indicesPercorridos);
 	    vizinhosLocais.add(sClone);
