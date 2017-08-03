@@ -1,6 +1,5 @@
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,11 +23,11 @@ class Main {
     private static final short FACILIDADE_MAE_BOM = 100;
     private static final int ELITISMO = 300;
     private static final float TAXA_MUTACAO = 0.05f;
-    private static final short ITER_SEM_MOD = 150;
-    private static final int TAM_POP = 5000;
+    private static final short ITER_SEM_MOD = 100;
+    private static final int TAM_POP = 50000;
     private static final short PENALIZACAO = Short.MAX_VALUE;
     private static final short ALEATORIEDADE_ROLETA = 1000;
-    private static final short VIZINHOS_LOCAIS = 100;
+    private static final short VIZINHOS_LOCAIS = 500;
 
     /**
      * Classe que representa o vertice que sera carregado e mantido inalterado
@@ -408,8 +407,9 @@ class Main {
 
     public static void main(String[] args) throws FileNotFoundException {
 
-	Scanner scan = new Scanner(new FileReader(Main.class.getResource("1.in").getPath()));
-	// Scanner scan = new Scanner(System.in);
+	// Scanner scan = new Scanner(new
+	// FileReader(Main.class.getResource("teste2.in").getPath()));
+	Scanner scan = new Scanner(System.in);
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
 	scan.nextLine();
@@ -422,11 +422,16 @@ class Main {
 
 	calculaDistancias();
 	System.out.println("P-Mediana-Capacitada");
-	System.out.println("Soma das distancias: " + new DecimalFormat("#.##").format(pMedianaCapacitada(false)));
+	for (int i = 1; i <= 10; i++) {
+	    System.out.println(
+		    "Soma das distancias" + i + " : " + new DecimalFormat("#.##").format(pMedianaCapacitada(false)));
+	}
 
 	System.out.println("P-Mediana-Capacitada-Com-Busca-Local");
-	System.out.println("Soma das distancias: " + new DecimalFormat("#.##").format(pMedianaCapacitada(true)));
-
+	for (int i = 1; i <= 10; i++) {
+	    System.out.println(
+		    "Soma das distancias" + i + " : " + new DecimalFormat("#.##").format(pMedianaCapacitada(true)));
+	}
     }
 
     private static void calculaDistancias() {
@@ -469,7 +474,8 @@ class Main {
 	    } else {
 		melhor = pop.getSolucoes()[0].getQualidade();
 		nrSemMod = 0;
-		System.out.println("Melhor: " + new DecimalFormat("#.##").format(melhor));
+		// System.out.println("Melhor: " + new
+		// DecimalFormat("#.##").format(melhor));
 	    }
 
 	    // Conceito de Elitismo
@@ -497,8 +503,8 @@ class Main {
 		newPop[count + 1] = indiv[1];
 		count += 2;
 	    }
-	    for (count = 0; count < TAM_POP; count++) {
-		if (comBuscaLocal) {
+	    if (comBuscaLocal) {
+		for (count = 0; count < TAM_POP; count++) {
 		    pop.getSolucoes()[count] = fazBuscaLocal(pop, pop.getSolucoes()[count]);
 		}
 	    }
