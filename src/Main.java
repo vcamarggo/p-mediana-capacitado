@@ -1,5 +1,3 @@
-
-import java.io.FileNotFoundException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,11 +8,9 @@ import java.util.Random;
 import java.util.Scanner;
 
 /**
- * @author Vinicius Camargo , Fernando Carvalho
+ * @author Fernando Carvalho, Vinicius Camargo
  *
  * @date 10/07/2017
- *
- * @opt 17.288,99
  */
 class Main {
 
@@ -24,10 +20,10 @@ class Main {
     private static final int ELITISMO = 300;
     private static final float TAXA_MUTACAO = 0.05f;
     private static final short ITER_SEM_MOD = 100;
-    private static final int TAM_POP = 50000;
+    private static final int TAM_POP = 7000;
     private static final short PENALIZACAO = Short.MAX_VALUE;
     private static final short ALEATORIEDADE_ROLETA = 1000;
-    private static final short VIZINHOS_LOCAIS = 500;
+    private static final short VIZINHOS_LOCAIS = 100;
 
     /**
      * Classe que representa o vertice que sera carregado e mantido inalterado
@@ -324,7 +320,7 @@ class Main {
 	}
 
 	/**
-	 * Operador de reprodumecao
+	 * Operador de reproducao
 	 *
 	 * @param pai
 	 * @param mae
@@ -405,10 +401,8 @@ class Main {
     private static double[][] vetorDistancia;
     static Random randomizer = new Random();
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) {
 
-	// Scanner scan = new Scanner(new
-	// FileReader(Main.class.getResource("teste2.in").getPath()));
 	Scanner scan = new Scanner(System.in);
 	nrVertices = scan.nextInt();
 	nrMedianas = scan.nextShort();
@@ -421,17 +415,7 @@ class Main {
 	scan.close();
 
 	calculaDistancias();
-	System.out.println("P-Mediana-Capacitada");
-	for (int i = 1; i <= 10; i++) {
-	    System.out.println(
-		    "Soma das distancias" + i + " : " + new DecimalFormat("#.##").format(pMedianaCapacitada(false)));
-	}
-
-	System.out.println("P-Mediana-Capacitada-Com-Busca-Local");
-	for (int i = 1; i <= 10; i++) {
-	    System.out.println(
-		    "Soma das distancias" + i + " : " + new DecimalFormat("#.##").format(pMedianaCapacitada(true)));
-	}
+    System.out.println(new DecimalFormat("#.##").format(pMedianaCapacitada(false)));
     }
 
     private static void calculaDistancias() {
@@ -465,17 +449,12 @@ class Main {
 	for (int nrSemMod = 0; nrSemMod < ITER_SEM_MOD;) {
 	    count = 0;
 	    Arrays.sort(pop.getSolucoes());
-
-	    if (comBuscaLocal && nrSemMod % 30 == 0 && nrSemMod > 0)
-		System.out.println("Sem mod: " + nrSemMod);
-
+		
 	    if (melhor <= pop.getSolucoes()[0].getQualidade()) {
 		nrSemMod++;
 	    } else {
 		melhor = pop.getSolucoes()[0].getQualidade();
 		nrSemMod = 0;
-		// System.out.println("Melhor: " + new
-		// DecimalFormat("#.##").format(melhor));
 	    }
 
 	    // Conceito de Elitismo
